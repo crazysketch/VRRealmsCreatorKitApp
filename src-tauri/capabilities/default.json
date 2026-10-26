@@ -1,0 +1,23 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "What the window may ask of the system: the app's own commands, a folder / file picker, and opening web links.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:allow-open",
+    "dialog:allow-ask",
+    "dialog:allow-message",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        { "url": "https://vr-realms.com/*" },
+        { "url": "https://discord.com/invite/*" },
+        { "url": "https://github.com/crazysketch/*" },
+        { "url": "https://store.epicgames.com/*" },
+        { "url": "https://store.steampowered.com/*" },
+        { "url": "steam://*" }
+      ]
+    }
+  ]
+}
