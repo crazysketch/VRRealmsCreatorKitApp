@@ -44,7 +44,9 @@ pub async fn get_json<T: serde::de::DeserializeOwned>(url: &str, timeout_secs: u
     let resp = client(Duration::from_secs(timeout_secs))?.get(url).send().await?;
     let status = resp.status();
     if status.as_u16() == 403 || status.as_u16() == 429 {
-        return fail("GitHub is limiting requests from this connection right now. Try again in a few minutes.");
+        let host = reqwest::Url::parse(url).ok().and_then(|u| u.host_str().map(str::to_string)).unwrap_or_default();
+        let who = if host.ends_with("github.com") { "GitHub".to_string() } else { host };
+        return fail(format!("{who} is limiting requests from this connection right now. Try again in a few minutes."));
     }
     if !status.is_success() {
         return Err(AppError::Network(format!("{url} answered {status}")));

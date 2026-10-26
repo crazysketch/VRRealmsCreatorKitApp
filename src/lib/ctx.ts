@@ -1,6 +1,9 @@
-import type { AppConfig, Overview } from "./api";
+import type { AppConfig, AppUpdate, Overview, UpdateCheck } from "./api";
 
-export type Page = "home" | "kit" | "settings" | "help" | "logs";
+export type Page = "home" | "creations" | "kit" | "settings" | "help" | "logs";
+
+/** What a page was opened for: "update" opens the Creator Kit page with the update checked and its changes listed. */
+export type Intent = "update" | null;
 
 /** What every page gets from the app frame. */
 export interface Ctx {
@@ -13,5 +16,13 @@ export interface Ctx {
   /** The job running now ("" when none). */
   busy: string;
   notify: (kind: "ok" | "error" | "info", text: string) => void;
-  go: (page: Page) => void;
+  go: (page: Page, intent?: Intent) => void;
+  intent: Intent;
+  clearIntent: () => void;
+  /** The current kit's update check (null until it answers, or when checking at start is off). */
+  kitUpdate: UpdateCheck | null;
+  /** The app's own update check (null until it answers). */
+  appUpdate: AppUpdate | null;
+  /** Asks again whether the app has an update. */
+  checkApp: () => Promise<AppUpdate | null>;
 }

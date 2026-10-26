@@ -2,7 +2,7 @@
 
 use crate::config::{self, AppConfig};
 use crate::error::{fail, AppResult};
-use crate::{applog, engine, epic, kit, news, steam, winutil};
+use crate::{applog, engine, epic, kit, news, selfupdate, site, steam, winutil};
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager};
@@ -314,6 +314,30 @@ pub fn show_in_explorer(path: String) -> AppResult<()> {
 #[tauri::command]
 pub async fn get_news() -> AppResult<news::News> {
     news::fetch().await
+}
+
+#[tauri::command]
+pub async fn get_live() -> AppResult<site::Live> {
+    site::live().await
+}
+
+/// The Workshop items of the Steam account on this PC (the window never names an account).
+#[tauri::command]
+pub async fn get_creations() -> AppResult<site::Creations> {
+    site::creations().await
+}
+
+// ----- the app's own updates --------------------------------------------------------------------
+
+#[tauri::command]
+pub async fn check_app_update(app: AppHandle) -> AppResult<selfupdate::AppUpdate> {
+    selfupdate::check(&app).await
+}
+
+/// Updates the app and starts the new version; the window closes on the way.
+#[tauri::command]
+pub async fn install_app_update(app: AppHandle) -> AppResult<()> {
+    selfupdate::install(app).await
 }
 
 #[derive(Serialize)]

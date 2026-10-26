@@ -1,7 +1,7 @@
 {
   "name": "vrrealms-creator-kit",
   "private": true,
-  "version": "0.4.32",
+  "version": "0.5.1",
   "type": "module",
   "scripts": {
     "dev": "vite",

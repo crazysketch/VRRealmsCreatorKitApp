@@ -8,6 +8,8 @@ mod ini;
 mod kit;
 mod net;
 mod news;
+mod selfupdate;
+mod site;
 mod steam;
 mod winutil;
 
@@ -18,6 +20,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             if let Ok(dir) = app.path().app_data_dir() {
                 let _ = std::fs::create_dir_all(&dir);
@@ -48,6 +51,10 @@ pub fn run() {
             commands::open_kit,
             commands::show_in_explorer,
             commands::get_news,
+            commands::get_live,
+            commands::get_creations,
+            commands::check_app_update,
+            commands::install_app_update,
             commands::get_log,
             commands::app_info,
         ])

@@ -86,6 +86,60 @@ pub fn status() -> SteamStatus {
     }
 }
 
+/// The first SteamID64; an account's SteamID64 is this plus its account number.
+const STEAM_ID64_BASE: u64 = 76_561_197_960_265_728;
+
+/// The Steam account on this PC, as Steam itself records it: the one signed in now, else the one
+/// that signed in last (`config/loginusers.vdf`). Only the SteamID64 and the public profile name are
+/// read; the sign-in name stays where it is.
+pub struct SteamAccount {
+    pub steam_id: String,
+    pub persona: Option<String>,
+    pub signed_in_now: bool,
+}
+
+pub fn this_pc_account() -> Option<SteamAccount> {
+    let (path, user) = steam_registry()?;
+    let users = fs::read_to_string(PathBuf::from(path).join(r"config\loginusers.vdf"))
+        .map(|t| login_users(&t))
+        .unwrap_or_default();
+    let (steam_id, signed_in_now) = if user != 0 {
+        ((STEAM_ID64_BASE + u64::from(user)).to_string(), winutil::is_process_running("steam.exe"))
+    } else {
+        let recent = users.iter().find(|u| u.most_recent).or(users.first())?;
+        (recent.steam_id.clone(), false)
+    };
+    let persona = users.iter().find(|u| u.steam_id == steam_id).and_then(|u| u.persona.clone());
+    Some(SteamAccount { steam_id, persona, signed_in_now })
+}
+
+struct LoginUser {
+    steam_id: String,
+    persona: Option<String>,
+    most_recent: bool,
+}
+
+/// The accounts in Steam's `loginusers.vdf`: a block per SteamID64 with "PersonaName" and "MostRecent".
+fn login_users(text: &str) -> Vec<LoginUser> {
+    let mut out: Vec<LoginUser> = Vec::new();
+    for line in text.lines() {
+        let parts: Vec<&str> = line.split('"').collect();
+        let is_id = parts.len() == 3 && parts[1].len() == 17 && parts[1].starts_with("7656119") && parts[1].bytes().all(|b| b.is_ascii_digit());
+        if is_id {
+            out.push(LoginUser { steam_id: parts[1].to_string(), persona: None, most_recent: false });
+        } else if parts.len() >= 4 {
+            if let Some(cur) = out.last_mut() {
+                match parts[1].to_ascii_lowercase().as_str() {
+                    "personaname" => cur.persona = Some(parts[3].to_string()).filter(|p| !p.trim().is_empty()),
+                    "mostrecent" => cur.most_recent = parts[3] == "1",
+                    _ => {}
+                }
+            }
+        }
+    }
+    out
+}
+
 pub fn steamcmd_path(configured: Option<&str>) -> PathBuf {
     match configured.map(str::trim).filter(|s| !s.is_empty()) {
         Some(p) => PathBuf::from(p),
@@ -211,6 +265,22 @@ mod tests {
         assert!(!is_valid_account_name("a b"));
         assert!(!is_valid_account_name("x\" +quit"));
         assert!(!is_valid_account_name("x"));
+    }
+
+    #[test]
+    fn reads_login_users() {
+        let text = "\"users\"\n{\n\t\"76561198000000001\"\n\t{\n\t\t\"AccountName\"\t\t\"someone\"\n\t\t\"PersonaName\"\t\t\"First\"\n\t\t\"MostRecent\"\t\t\"0\"\n\t}\n\
+                    \t\"76561197963309864\"\n\t{\n\t\t\"AccountName\"\t\t\"other\"\n\t\t\"PersonaName\"\t\t\"Second\"\n\t\t\"mostrecent\"\t\t\"1\"\n\t}\n}\n";
+        let users = login_users(text);
+        assert_eq!(users.len(), 2);
+        assert_eq!(users[0].steam_id, "76561198000000001");
+        assert_eq!(users[0].persona.as_deref(), Some("First"));
+        assert!(!users[0].most_recent);
+        assert_eq!(users[1].steam_id, "76561197963309864");
+        assert_eq!(users[1].persona.as_deref(), Some("Second"));
+        assert!(users[1].most_recent);
+        assert!(login_users("\"users\"\n{\n\t\"123\"\n\t{\n\t}\n}\n").is_empty());
+        assert_eq!((STEAM_ID64_BASE + 3_044_136).to_string(), "76561197963309864");
     }
 
     #[test]

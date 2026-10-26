@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "VR Realms Creator Kit",
   "mainBinaryName": "VRRealmsCreatorKit",
-  "version": "0.4.32",
+  "version": "0.5.1",
   "identifier": "com.vrrealms.creatorkit",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -24,7 +24,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' data: https://vr-realms.com https://*.vr-realms.com; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost"
+      "csp": "default-src 'self'; img-src 'self' data: https://vr-realms.com https://*.vr-realms.com https://images.steamusercontent.com https://steamuserimages-a.akamaihd.net; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost"
     }
   },
   "bundle": {
@@ -32,7 +32,9 @@
     "publisher": "Sketchy Realms",
     "copyright": "Copyright (c) 2026 Sketchy Realms. All rights reserved.",
     "licenseFile": "../LICENSE.md",
-    "targets": ["nsis"],
+    "targets": [
+      "nsis"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -40,7 +42,21 @@
       "icons/icon.ico"
     ],
     "windows": {
-      "webviewInstallMode": { "type": "embedBootstrapper" }
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      }
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYzQTcyREMxMjYwMThCOTYKUldTV2l3RW13UzJuODBZQ3JlS1UrN1RSU1pLckd3VzNYZzJxSEJUZHZ0ajJQcmVOWVpQMGxTUVAK",
+      "endpoints": [
+        "https://github.com/crazysketch/VRRealmsCreatorKitApp/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { BookOpen, Boxes, FileText, Home, LifeBuoy, Settings, type LucideIcon } from "lucide-react";
+import { BookOpen, Boxes, FileText, Home, LifeBuoy, Settings, Sparkles, type LucideIcon } from "lucide-react";
 import { LINKS, openLink } from "../lib/api";
 import type { Page } from "../lib/ctx";
 import DiscordIcon from "./DiscordIcon";
@@ -7,13 +7,23 @@ import pkg from "../../package.json";
 
 const items: { id: Page; icon: LucideIcon; label: string }[] = [
   { id: "home", icon: Home, label: "nav.home" },
+  { id: "creations", icon: Sparkles, label: "nav.creations" },
   { id: "kit", icon: Boxes, label: "nav.kit" },
   { id: "settings", icon: Settings, label: "nav.settings" },
   { id: "help", icon: LifeBuoy, label: "nav.help" },
   { id: "logs", icon: FileText, label: "nav.logs" },
 ];
 
-export default function Sidebar({ current, onNavigate }: { current: Page; onNavigate: (p: Page) => void }) {
+export default function Sidebar({
+  current,
+  onNavigate,
+  badges,
+}: {
+  current: Page;
+  onNavigate: (p: Page) => void;
+  /** A small tag after a page's name, such as NEW on the Creator Kit while an update is out. */
+  badges?: Partial<Record<Page, string>>;
+}) {
   const { t } = useTranslation();
   return (
     <aside className="sidebar">
@@ -37,6 +47,7 @@ export default function Sidebar({ current, onNavigate }: { current: Page; onNavi
             >
               <Icon />
               {t(item.label)}
+              {badges?.[item.id] && <span className="nav-badge">{badges[item.id]}</span>}
             </button>
           );
         })}

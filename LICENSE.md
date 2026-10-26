@@ -26,6 +26,12 @@ do not agree, do not use the app.
 - Use the app's code, design, images, or the VR Realms name and logo in any other application, game or product.
 - Sell, rent or sublicense the app or its contents.
 - Remove or alter copyright, trademark or license notices.
+- Reverse engineer, decompile or disassemble an official build, or change or tamper with one, except where the law
+  allows it despite this limitation. The source code is published for reading; this covers the builds we ship.
+- Make, share or use a build that gets around the app's safety checks: the signature checks of downloads and app
+  updates, the checksums of Creator Kit files, or the Epic Games and Valve signature checks.
+- Use the VR Realms services the app talks to (vr-realms.com and its feeds) from any other program, collect data from
+  them in bulk, or put load on them beyond normal use of the app.
 - Use the app to get around the VR Realms User Agreement, the Steam Workshop terms or the terms of any other service.
 
 ## 3. What the app does on your computer
@@ -35,6 +41,11 @@ do not agree, do not use the app.
 - It downloads the Epic Games Launcher only from Epic Games and SteamCMD only from Valve, and runs them only when
   Windows confirms they are signed by Epic Games or Valve.
 - It never asks for, sees or stores a password. Steam sign-in happens in SteamCMD's own window.
+- To show your creations it reads which Steam account is signed in on this computer from Steam's own files (the
+  account number and display name, nothing else) and sends only your public Steam ID to vr-realms.com. Everything it
+  shows there is public: your public Workshop items and counts of players, never who they are.
+- It updates itself only with installers signed by Sketchy Realms, and checks the signature before it installs one.
+  A copy installed through Steam is updated by Steam.
 - When it updates a kit it never changes the Community folder where your work lives, keeps files you changed, and
   copies every file it replaces into a backup folder first.
 

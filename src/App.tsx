@@ -4,12 +4,13 @@ import { X } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import ProgressCard from "./components/ProgressCard";
 import Home from "./pages/Home";
+import Creations from "./pages/Creations";
 import Kit from "./pages/Kit";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
 import Logs from "./pages/Logs";
-import { call, onEvent, onProgress, type AppConfig, type Overview, type Progress } from "./lib/api";
-import type { Ctx, Page } from "./lib/ctx";
+import { call, onEvent, onProgress, type AppConfig, type AppUpdate, type Overview, type Progress, type UpdateCheck } from "./lib/api";
+import type { Ctx, Intent, Page } from "./lib/ctx";
 
 type Msg = { kind: "ok" | "error" | "info"; text: string } | null;
 
@@ -21,6 +22,9 @@ export default function App() {
   const [progress, setProgress] = useState<Progress | null>(null);
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState<Msg>(null);
+  const [intent, setIntent] = useState<Intent>(null);
+  const [kitUpdate, setKitUpdate] = useState<UpdateCheck | null>(null);
+  const [appUpdate, setAppUpdate] = useState<AppUpdate | null>(null);
   const busyRef = useRef("");
 
   const refresh = useCallback(async () => {
@@ -78,6 +82,44 @@ export default function App() {
     };
   }, [refresh, t]);
 
+  // One update check for the whole window (the Home button, the checklist row and the menu's NEW tag), asked again
+  // when the current kit or its version changes, so the button goes away once the kit is updated.
+  const kitRoot = overview?.kit?.exists ? overview.kit.root : null;
+  const kitVersion = overview?.kit?.version ?? null;
+  const checkOnStart = config?.checkUpdatesOnStart ?? false;
+  useEffect(() => {
+    if (!checkOnStart || !kitRoot) {
+      setKitUpdate(null);
+      return;
+    }
+    let stale = false;
+    call<UpdateCheck>("check_kit_update", { path: kitRoot })
+      .then((u) => !stale && setKitUpdate(u))
+      .catch(() => !stale && setKitUpdate(null));
+    return () => {
+      stale = true;
+    };
+  }, [kitRoot, kitVersion, checkOnStart]);
+
+  const checkApp = useCallback(async () => {
+    try {
+      const u = await call<AppUpdate>("check_app_update");
+      setAppUpdate(u);
+      return u;
+    } catch {
+      return null;
+    }
+  }, []);
+  useEffect(() => {
+    if (checkOnStart) checkApp();
+  }, [checkOnStart, checkApp]);
+
+  const go = useCallback((p: Page, i?: Intent) => {
+    setIntent(i ?? null);
+    setPage(p);
+  }, []);
+  const clearIntent = useCallback(() => setIntent(null), []);
+
   if (!config) {
     return (
       <div className="app-layout" style={{ alignItems: "center", justifyContent: "center" }}>
@@ -86,11 +128,12 @@ export default function App() {
     );
   }
 
-  const ctx: Ctx = { config, overview, refresh, run, busy, notify, go: setPage };
+  const ctx: Ctx = { config, overview, refresh, run, busy, notify, go, intent, clearIntent, kitUpdate, appUpdate, checkApp };
+  const anyUpdate = !!kitUpdate?.hasUpdate || !!appUpdate?.hasUpdate;
 
   return (
     <div className="app-layout">
-      <Sidebar current={page} onNavigate={setPage} />
+      <Sidebar current={page} onNavigate={(p) => go(p)} badges={anyUpdate ? { kit: t("nav.newBadge") } : undefined} />
       <main className="main-content">
         {progress && busy && <ProgressCard progress={progress} />}
         {msg && (
@@ -102,6 +145,7 @@ export default function App() {
           </div>
         )}
         {page === "home" && <Home ctx={ctx} />}
+        {page === "creations" && <Creations ctx={ctx} />}
         {page === "kit" && <Kit ctx={ctx} />}
         {page === "settings" && <Settings ctx={ctx} />}
         {page === "help" && <Help />}

@@ -46,13 +46,37 @@ export default function Kit({ ctx }: { ctx: Ctx }) {
     await loadKits();
   };
 
-  const checkUpdate = () =>
-    current &&
-    run("check", () => call<UpdateCheck>("check_kit_update", { path: current.root })).then((r) => r && setUpdate(r));
+  const checkUpdate = () => {
+    ctx.checkApp();
+    return (
+      current &&
+      run("check", () => call<UpdateCheck>("check_kit_update", { path: current.root })).then((r) => r && setUpdate(r))
+    );
+  };
+
+  // The app updates itself only as an installed copy; Steam updates a Steam copy, a plain .exe is downloaded again.
+  const app = ctx.appUpdate;
+  const appInstallable = !!app?.hasUpdate && app.how === "installed";
+  const installApp = () => run("app-update", () => call("install_app_update"), () => t("kit.appRestarting"));
 
   const preview = () =>
     current &&
     run("plan", () => call<UpdateResult>("update_kit", { path: current.root, dryRun: true })).then((r) => r && setPlan(r));
+
+  // Opened from a "new update" button: check, then list what the update would change. Nothing changes until Update.
+  useEffect(() => {
+    if (ctx.intent === "update") ctx.checkApp();
+  }, [ctx.intent]);
+  useEffect(() => {
+    if (ctx.intent !== "update" || !current || busy) return;
+    ctx.clearIntent();
+    const root = current.root;
+    run("check", () => call<UpdateCheck>("check_kit_update", { path: root })).then((r) => {
+      if (!r) return;
+      setUpdate(r);
+      if (r.hasUpdate) run("plan", () => call<UpdateResult>("update_kit", { path: root, dryRun: true })).then((p) => p && setPlan(p));
+    });
+  }, [ctx.intent, current?.root, busy]);
 
   const doUpdate = async () => {
     if (!current) return;
@@ -61,6 +85,8 @@ export default function Kit({ ctx }: { ctx: Ctx }) {
       setPlan(null);
       setUpdate(null);
       await loadKits();
+      // One update for both: the kit is done, now the app, which closes and opens again as the new version.
+      if (appInstallable) await installApp();
     }
   };
 
@@ -93,6 +119,28 @@ export default function Kit({ ctx }: { ctx: Ctx }) {
       <p className="text-sm text-dim mb-16" style={{ maxWidth: 760, lineHeight: 1.5 }}>
         {t("kit.lead")}
       </p>
+
+      {app?.hasUpdate && (
+        <div className="card app-update-card">
+          <div className="card-header">
+            <span className="card-title">{t("kit.appTitle")}</span>
+            <span className="badge badge-warning">{t("kit.appAvailable", { latest: app.latest, current: app.current })}</span>
+          </div>
+          {app.notes && <div className="notes">{app.notes}</div>}
+          <div className="hint">{appInstallable ? t("kit.appHow") : t("kit.appHowPortable")}</div>
+          <div className="actions">
+            {appInstallable ? (
+              <button className="btn btn-accent" disabled={!!busy} onClick={installApp}>
+                <Download size={14} /> {busy === "app-update" ? t("kit.appUpdating") : t("kit.appUpdate")}
+              </button>
+            ) : (
+              <button className="btn btn-accent" onClick={() => openLink(app.downloadPage)}>
+                <ExternalLink size={14} /> {t("kit.appDownload")}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <div className="card-header">
@@ -252,7 +300,7 @@ export default function Kit({ ctx }: { ctx: Ctx }) {
               {ctx.overview?.editorRunning && <div className="hint" style={{ color: "var(--warn)" }}>{t("kit.closeEditor")}</div>}
               <div className="actions">
                 <button className="btn btn-accent" disabled={!!busy || ctx.overview?.editorRunning || plan.plan.replace.length + plan.plan.add.length === 0} onClick={doUpdate}>
-                  <Download size={14} /> {busy === "update" ? t("kit.updating") : t("kit.planConfirm")}
+                  <Download size={14} /> {busy === "update" ? t("kit.updating") : appInstallable ? t("kit.planConfirmBoth") : t("kit.planConfirm")}
                 </button>
                 <button className="btn btn-secondary" onClick={() => setPlan(null)}>
                   {t("kit.cancel")}

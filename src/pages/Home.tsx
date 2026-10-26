@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Download, ExternalLink, FolderOpen, LogIn, Play, RefreshCw } from "lucide-react";
+import { Download, ExternalLink, FolderOpen, LogIn, Play, RefreshCw, Sparkles } from "lucide-react";
 import CheckRow, { type CheckState } from "../components/CheckRow";
 import InstallKitPanel from "../components/InstallKitPanel";
+import LiveCard from "../components/LiveCard";
 import NewsCard from "../components/NewsCard";
-import { call, formatBytes, LINKS, openLink, pickFolder, type KitInfo, type UpdateCheck } from "../lib/api";
+import { call, formatBytes, LINKS, openLink, pickFolder, type KitInfo } from "../lib/api";
 import type { Ctx } from "../lib/ctx";
 
 const LOW_SPACE = 80 * 1024 ** 3;
@@ -13,16 +14,12 @@ export default function Home({ ctx }: { ctx: Ctx }) {
   const { t } = useTranslation();
   const { overview: ov, config, run, busy } = ctx;
   const [installing, setInstalling] = useState(false);
-  const [update, setUpdate] = useState<UpdateCheck | null>(null);
   const [user, setUser] = useState(config.steamUser ?? "");
 
   const kit = ov?.kit ?? null;
-  useEffect(() => {
-    if (!config.checkUpdatesOnStart || !kit?.exists) return;
-    call<UpdateCheck>("check_kit_update", { path: kit.root })
-      .then(setUpdate)
-      .catch(() => setUpdate(null));
-  }, [kit?.root, kit?.version, config.checkUpdatesOnStart]);
+  const update = ctx.kitUpdate;
+  const kitNew = !!kit?.exists && !!update?.hasUpdate;
+  const appNew = !!ctx.appUpdate?.hasUpdate;
 
   if (!ov) return <div className="text-muted">{t("common.loading")}</div>;
 
@@ -63,13 +60,29 @@ export default function Home({ ctx }: { ctx: Ctx }) {
           <p>{t("home.lead")}</p>
         </div>
         <div className="hero-side">
-          <button
-            className="btn btn-accent btn-xl"
-            disabled={!ready || !!busy}
-            onClick={() => run("open", () => call("open_kit", { path: null }))}
-          >
-            <Play size={17} /> {busy === "open" ? t("home.openBusy") : t("home.open")}
-          </button>
+          <div className="hero-buttons">
+            {(kitNew || appNew) && (
+              <button className="btn btn-update btn-xl" onClick={() => ctx.go("kit", "update")} title={t("home.updateHint")}>
+                <span className="update-ping" />
+                <Sparkles size={17} />
+                <span className="update-label">
+                  <span className="update-kicker">{t("home.updateKicker")}</span>
+                  {kitNew && appNew
+                    ? t("home.updateBoth", { latest: update!.latest })
+                    : kitNew
+                    ? t("home.updateButton", { latest: update!.latest })
+                    : t("home.updateApp", { latest: ctx.appUpdate!.latest })}
+                </span>
+              </button>
+            )}
+            <button
+              className="btn btn-accent btn-xl"
+              disabled={!ready || !!busy}
+              onClick={() => run("open", () => call("open_kit", { path: null }))}
+            >
+              <Play size={17} /> {busy === "open" ? t("home.openBusy") : t("home.open")}
+            </button>
+          </div>
           {!ready && <span className="note">{t("home.notReady")}</span>}
           {ready && ov.editorRunning && <span className="note">{t("home.editorRunning")}</span>}
         </div>
@@ -149,7 +162,7 @@ export default function Home({ ctx }: { ctx: Ctx }) {
               </>
             )}
             {kitOk && update?.hasUpdate && (
-              <button className="btn btn-primary btn-sm" onClick={() => ctx.go("kit")}>
+              <button className="btn btn-primary btn-sm" onClick={() => ctx.go("kit", "update")}>
                 <Download size={13} /> {t("check.kitUpdateNow", { latest: update.latest })}
               </button>
             )}
@@ -227,7 +240,10 @@ export default function Home({ ctx }: { ctx: Ctx }) {
           </div>
         </div>
 
-        <NewsCard />
+        <div>
+          <LiveCard />
+          <NewsCard />
+        </div>
       </div>
     </div>
   );

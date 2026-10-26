@@ -1,6 +1,6 @@
 [package]
 name = "vrrealms-creator-kit"
-version = "0.4.32"
+version = "0.5.1"
 description = "VR Realms Creator Kit: installs, updates and opens the Creator Kit"
 authors = ["VR Realms"]
 edition = "2021"
@@ -27,6 +27,7 @@ hex = "0.4"
 dirs = "5"
 chrono = "0.4"
 thiserror = "1"
+tauri-plugin-updater = "2"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"

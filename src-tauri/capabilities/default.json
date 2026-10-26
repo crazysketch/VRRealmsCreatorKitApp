@@ -16,7 +16,11 @@
         { "url": "https://github.com/crazysketch/*" },
         { "url": "https://store.epicgames.com/*" },
         { "url": "https://store.steampowered.com/*" },
-        { "url": "steam://*" }
+        { "url": "https://steamcommunity.com/sharedfiles/filedetails/*" },
+        { "url": "https://steamcommunity.com/profiles/*" },
+        { "url": "steam://open/main" },
+        { "url": "steam://run/2964550" },
+        { "url": "steam://install/2964550" }
       ]
     }
   ]
