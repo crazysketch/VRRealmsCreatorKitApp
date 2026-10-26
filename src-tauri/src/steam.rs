@@ -205,16 +205,20 @@ pub async fn install_steamcmd(app: AppHandle, dir: PathBuf, download_dir: PathBu
     Ok(exe.to_string_lossy().into_owned())
 }
 
-/// A Steam account name: letters, digits and underscores, as Steam allows them.
+/// A Steam account name: letters, digits and underscores, plus the dots, dashes and @ of older accounts whose
+/// sign-in name looks like an email. It starts with a letter or digit and has no space, quote or '+', so it can
+/// only ever be the one argument after SteamCMD's +login.
 pub fn is_valid_account_name(name: &str) -> bool {
-    (2..=64).contains(&name.len()) && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+    (2..=64).contains(&name.len())
+        && name.starts_with(|c: char| c.is_ascii_alphanumeric())
+        && name.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-' | '@'))
 }
 
 /// Opens SteamCMD's own window signing in `user`. The creator types the password and the Steam Guard
 /// code there; SteamCMD remembers the sign-in for later uploads. Typing `quit` closes the window.
 pub fn open_login_window(steamcmd: &Path, user: &str) -> AppResult<()> {
     if !is_valid_account_name(user) {
-        return fail("That is not a Steam account name. Use the name you sign in to Steam with (not your email and not your profile name).");
+        return fail("That is not a Steam account name. Use the name you sign in to Steam with (not your profile name).");
     }
     if !steamcmd.is_file() {
         return fail("Install SteamCMD first.");
@@ -261,7 +265,11 @@ mod tests {
     #[test]
     fn account_names() {
         assert!(is_valid_account_name("crazy_sketch85"));
-        assert!(!is_valid_account_name("me@mail.com"));
+        assert!(is_valid_account_name("old.name@mail.net"));
+        assert!(is_valid_account_name("some-name"));
+        assert!(!is_valid_account_name("-quit"));
+        assert!(!is_valid_account_name("+quit"));
+        assert!(!is_valid_account_name("a+quit"));
         assert!(!is_valid_account_name("a b"));
         assert!(!is_valid_account_name("x\" +quit"));
         assert!(!is_valid_account_name("x"));

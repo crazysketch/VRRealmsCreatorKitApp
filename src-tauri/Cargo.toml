@@ -1,6 +1,6 @@
 [package]
 name = "vrrealms-creator-kit"
-version = "0.5.1"
+version = "0.5.2"
 description = "VR Realms Creator Kit: installs, updates and opens the Creator Kit"
 authors = ["VR Realms"]
 edition = "2021"

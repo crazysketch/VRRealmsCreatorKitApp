@@ -144,7 +144,7 @@ pub async fn install_steamcmd(app: AppHandle, dir: Option<String>) -> AppResult<
 pub fn steam_login(app: AppHandle, user: String) -> AppResult<String> {
     let user = user.trim().to_string();
     if !steam::is_valid_account_name(&user) {
-        return fail("That is not a Steam account name. Use the name you sign in to Steam with (not your email and not your profile name).");
+        return fail("That is not a Steam account name. Use the name you sign in to Steam with (not your profile name).");
     }
     let mut cfg = load(&app)?;
     let steamcmd = steam::steamcmd_path(cfg.steamcmd_path.as_deref());
