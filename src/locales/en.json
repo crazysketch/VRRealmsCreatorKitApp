@@ -88,6 +88,8 @@
     "steamMissing": "Steam is not installed.",
     "steamGetGame": "Get VR Realms",
     "steamOpen": "Open Steam",
+    "uploadsTitle": "Workshop uploads",
+    "uploadsSteamApp": "Your kit uploads through the Steam app: keep Steam open and online, then press Upload in the kit. SteamCMD is not needed.",
     "steamcmdTitle": "SteamCMD (Workshop uploads)",
     "steamcmdOk": "Installed at {{path}}.",
     "steamcmdMissing": "Valve's uploader. The kit uses it to put your creations on the Steam Workshop.",

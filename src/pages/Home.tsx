@@ -33,6 +33,8 @@ export default function Home({ ctx }: { ctx: Ctx }) {
   const kitState: CheckState = !kitOk ? "bad" : update?.hasUpdate ? "warn" : "ok";
   const steamState: CheckState = ov.steam.signedIn && ov.steam.vrRealmsInstalled ? "ok" : ov.steam.installed ? "warn" : "bad";
   const cmdState: CheckState = ov.steamcmd.installed ? "ok" : "bad";
+  // Kit 0.5.4.3 and newer upload through the Steam app itself: SteamCMD and its sign-in are not needed.
+  const steamAppUploads = kitOk && versionAtLeast(kit?.version, [0, 5, 4, 3]);
   const loginState: CheckState = config.steamUser ? "ok" : "warn";
 
   const space =
@@ -199,6 +201,12 @@ export default function Home({ ctx }: { ctx: Ctx }) {
             )}
           </CheckRow>
 
+          {steamAppUploads ? (
+            <CheckRow state="ok" title={t("check.uploadsTitle")} text={t("check.uploadsSteamApp")}>
+              {null}
+            </CheckRow>
+          ) : (
+          <>
           <CheckRow
             state={cmdState}
             title={t("check.steamcmdTitle")}
@@ -238,6 +246,8 @@ export default function Home({ ctx }: { ctx: Ctx }) {
               <LogIn size={14} /> {config.steamUser ? t("check.loginAgain") : t("check.loginButton")}
             </button>
           </div>
+          </>
+          )}
         </div>
 
         <div>
@@ -247,4 +257,16 @@ export default function Home({ ctx }: { ctx: Ctx }) {
       </div>
     </div>
   );
+}
+
+/** True when a kit version like "0.5.4.3" is at least `min` (missing parts count as 0). */
+function versionAtLeast(version: string | null | undefined, min: number[]): boolean {
+  if (!version) return false;
+  const parts = version.split(".").map((p) => parseInt(p, 10) || 0);
+  for (let i = 0; i < Math.max(parts.length, min.length); i++) {
+    const a = parts[i] ?? 0;
+    const b = min[i] ?? 0;
+    if (a !== b) return a > b;
+  }
+  return true;
 }

@@ -125,6 +125,11 @@ fn split_dn(s: &str) -> Vec<String> {
 /// (for example "Epic Games Inc." or "Valve Corp."). Windows does the checking; the path goes to it
 /// through an environment variable, never through the command text.
 pub fn require_signed_by(file: &Path, org: &str) -> AppResult<()> {
+    require_signed_by_any(file, &[org])
+}
+
+/// The same, accepting any one of `orgs` (a publisher that signs under more than one name).
+pub fn require_signed_by_any(file: &Path, orgs: &[&str]) -> AppResult<()> {
     let script = "$s = Get-AuthenticodeSignature -LiteralPath $env:VRR_SIGFILE; \
                   [pscustomobject]@{ Status = [string]$s.Status; Subject = [string]$s.SignerCertificate.Subject } \
                   | ConvertTo-Json -Compress";
@@ -138,9 +143,10 @@ pub fn require_signed_by(file: &Path, org: &str) -> AppResult<()> {
         Err(_) => return fail("Windows could not check the download's signature, so it was not started."),
     };
     let got = report.subject.as_deref().and_then(organization).unwrap_or_default();
-    if report.status != "Valid" || got != org {
+    if report.status != "Valid" || !orgs.iter().any(|o| got == *o) {
         return fail(format!(
-            "The download is not signed by {org} (Windows says: {}, signed by '{}'). It was not started.",
+            "The download is not signed by {} (Windows says: {}, signed by '{}'). It was not started.",
+            orgs.join(" / "),
             report.status,
             if got.is_empty() { "nobody" } else { &got }
         ));
@@ -159,5 +165,17 @@ mod tests {
         let q = "CN=DigiCert Trusted G4, O=\"DigiCert, Inc.\", C=US";
         assert_eq!(organization(q).as_deref(), Some("DigiCert, Inc."));
         assert_eq!(organization("CN=nobody"), None);
+    }
+}
+
+#[cfg(test)]
+mod valve_signer_check {
+    /// A run against a real steamcmd.exe: VRR_STEAMCMD_TEST=<path> cargo test -- --ignored valve
+    #[test]
+    #[ignore]
+    fn valve_signed_steamcmd_passes() {
+        let p = std::env::var("VRR_STEAMCMD_TEST").expect("set VRR_STEAMCMD_TEST");
+        super::require_signed_by_any(std::path::Path::new(&p), &["Valve", "Valve Corp."]).unwrap();
+        assert!(super::require_signed_by(std::path::Path::new(&p), "Valve Corp.").is_err());
     }
 }

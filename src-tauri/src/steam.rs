@@ -15,7 +15,8 @@ pub const VR_REALMS_APP_ID: u32 = 2964550;
 pub const DEFAULT_STEAMCMD: &str = r"C:\steamcmd\steamcmd.exe";
 /// Valve's own download for SteamCMD (developer.valvesoftware.com/wiki/SteamCMD).
 const STEAMCMD_ZIP_URL: &str = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip";
-const VALVE_SIGNER: &str = "Valve Corp.";
+/// Valve signs steamcmd.exe as "Valve" (the file in Valve's zip, checked 2026-11-07); newer Valve files say "Valve Corp.".
+const VALVE_SIGNERS: &[&str] = &["Valve", "Valve Corp."];
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -173,7 +174,7 @@ pub async fn install_steamcmd(app: AppHandle, dir: PathBuf, download_dir: PathBu
         fs::create_dir_all(exe_for_thread.parent().unwrap_or(Path::new(".")))?;
         let tmp = exe_for_thread.with_extension("exe.new");
         fs::write(&tmp, &bytes)?;
-        if let Err(e) = winutil::require_signed_by(&tmp, VALVE_SIGNER) {
+        if let Err(e) = winutil::require_signed_by_any(&tmp, VALVE_SIGNERS) {
             let _ = fs::remove_file(&tmp);
             return Err(e);
         }
@@ -231,7 +232,7 @@ pub fn open_login_window(steamcmd: &Path, user: &str) -> AppResult<()> {
         return fail("The SteamCMD path in the settings does not point at steamcmd.exe.");
     }
     // Only Valve's own SteamCMD gets the account name and the sign-in.
-    winutil::require_signed_by(steamcmd, VALVE_SIGNER)?;
+    winutil::require_signed_by_any(steamcmd, VALVE_SIGNERS)?;
     let mut cmd = std::process::Command::new(steamcmd);
     cmd.args(["+login", user]).current_dir(steamcmd.parent().unwrap_or(Path::new(".")));
     #[cfg(windows)]
